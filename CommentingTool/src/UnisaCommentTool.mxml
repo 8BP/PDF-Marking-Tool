@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" showFlexChrome="false" alwaysInFront="true" creationComplete="init()" xmlns:ns1="components.*" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+	<mx:Script>
+		<![CDATA[
+			/* October 2009  
+ 
+			   UNISA eMarking Suite
+			   is delivered to UNISA under the 
+			   FLOSS licencing regime
+			 
+			   proudly developed by
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			 
+			      CREDITS
+			      Lead Developer    :: War Commander      :: Kyle Bowden
+			      Business Analyst  :: Field General      :: Willy Gadney
+			      Test Squad        :: Clean Out Crew     :: Herman Van Wyk & Tina Kanniah
+			      Dev Support       :: Backup             :: Nelson Baloyi
+			      LC Designer       :: Artillery          :: Lentswe Morule
+			      Installer         :: Mobilizer          :: Thabahla Shoko
+			      Enviro & Food     :: Crew Support       :: Khosi Gwala
+			      Architect         :: Special Operations :: Luigi D'Amico
+			*/
+			
+			import mx.events.EffectEvent;
+			import mx.effects.Glow;
+			import mx.events.FlexEvent;
+			import mx.effects.Fade;
+			import mx.effects.Blur;
+			import mx.effects.Parallel;
+			import mx.olap.aggregators.CountAggregator;
+			import mx.controls.Alert;
+			import bean.DataBean;
+			
+			public var dataBean:DataBean;
+			public var inView:Boolean = true;
+			
+			private var glow:Glow = new Glow();
+			
+			public var firstStartUp:Boolean = true;
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			private function init():void {
+				maximize();
+				
+				dataBean = new DataBean();
+				
+				mainView.hideRubricPanel();
+				// DO INIT EFFECT
+				addEventListener(FlexEvent.APPLICATION_COMPLETE, function():void {focusOutEffect();});	
+			}
+			
+			public function focusOutEffect():void {
+				if(inView) {
+					var parra:Parallel = new Parallel();
+					
+					if(firstStartUp) {
+					   parra.addEventListener(EffectEvent.EFFECT_END, function():void{
+					      mainView.imgOpenRubric.visible = true;
+					      mainView.imgRubricSetupExit.visible = true;
+					      mainView.pnlRubricSetup.visible = true;
+					   });
+					   firstStartUp = false;
+					}
+					
+					var blur:Blur = new Blur();
+					blur.blurXFrom = 0;
+					blur.blurXTo = 10;
+					blur.blurYFrom = 0;
+					blur.blurYTo = 10;
+					
+					var fade:Fade = new Fade();
+					fade.alphaFrom = 1;
+					fade.alphaTo = 0;
+					
+					parra.target = mainView;
+					parra.duration = 700;
+					parra.addChild(blur);
+					parra.addChild(fade);
+					parra.play();
+					
+					inView = false;
+				}
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			private function focusInEffect():void {
+				if(!inView) {
+					var parra:Parallel = new Parallel();
+					
+					var blur:Blur = new Blur();
+					blur.blurXFrom = 5;
+					blur.blurXTo = 0;
+					blur.blurYFrom = 5;
+					blur.blurYTo = 0;
+					
+					var fade:Fade = new Fade();
+					fade.alphaFrom = 0;
+					fade.alphaTo = 1;
+					
+					parra.target = mainView;
+					parra.duration = 1000;
+					parra.addChild(blur);
+					parra.addChild(fade);
+					parra.play();
+					
+					inView = true;
+				}
+			}
+			
+			public function doCertainFocus():void {
+				if(glow.isPlaying) {
+				   glow.pause();
+				}
+				
+				if(inView) {
+				   focusOutEffect();
+				   glow.color = 0xFF5555;
+				} else
+				if(!inView) {
+				   focusInEffect();
+				   glow.color = 0x08FF08;
+				}
+				
+				glow.alphaFrom = 100;
+				glow.alphaTo = 0;
+				glow.blurXFrom = 10;
+				glow.blurXTo = 0;
+				glow.blurYFrom = 10;
+				glow.blurYTo = 0;
+				glow.play();
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			private function addQuestion():void {
+				if(mainView.edtQuestionNumber.text != "") {
+					if(!dataBean.checkExistingQuestion(mainView.edtQuestionNumber.text)) {
+						dataBean.addQuestion(mainView.edtQuestionNumber.text);
+						
+						mainView.cmbQuestions.dataProvider = dataBean.getQuestions();
+						
+						mainView.edtQuestionNumber.text = "";
+						mainView.edtQuestionNumber.setFocus();
+						
+						mainView.lblQuestionNumber.text = mainView.cmbQuestions.selectedItem as String;
+					} else {
+					    Alert.show("The Element already exists!");	
+					}
+				} else {
+					Alert.show("Please enter a Element!");
+				}
+			}
+			
+			public function addComment(question:String, comment:String, mark:String):int {
+				var index:int = dataBean.addComment(question, comment, mark);
+				
+				return index;
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			private function updateFileInfoDetails():void {
+				dataBean.courseName = mainView.edtCourse.text;
+				dataBean.assigmentNumber = mainView.edtAssigment.text;
+				dataBean.assigmentTotal = mainView.edtTotal.text;
+				
+				if(mainView.edtTotal.text != "") {
+				   writeTotalFile(mainView.edtTotal.text);
+				}
+			}
+			
+			public function writeTotalFile(total:String):void {
+				var unisaPath:String = "C:/Program Files/UNISA/tot_engine.txt";
+				var file:File = new File(unisaPath);
+				
+				var strClip:String = "BOF\r" +
+				                     total + "\r" + 
+				                     "EOF";
+				
+				var stream:FileStream = new FileStream();
+				stream.open(file, FileMode.WRITE);
+				stream.writeUTFBytes(strClip);
+				
+				stream.close();
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			public function addGlow(img:Image):void {
+				glow.target = img;
+				glow.alphaFrom = 0;
+				glow.alphaTo = 100;
+				glow.blurXFrom = 0;
+				glow.blurXTo = 10;
+				glow.blurYFrom = 0;
+				glow.blurYTo = 10;
+				if(!inView) {
+				   glow.color = 0x08FF08;
+				} else {
+				   glow.color = 0xFF5555;
+				}
+				glow.play();
+			}
+			
+			public function removeGlow(img:Image):void {
+				glow.target = img;
+			    glow.alphaTo = 0;
+			    glow.blurXTo = 0;
+			    glow.blurYTo = 0;
+			    if(!inView) {
+				   glow.color = 0x08FF08;
+			    } else {
+				   glow.color = 0xFF5555;
+			    }
+			    glow.play();
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			public function prepopulateData():void {
+				mainView.edtCourse.text = dataBean.courseName;
+				mainView.edtAssigment.text = dataBean.assigmentNumber;
+				mainView.edtTotal.text = dataBean.assigmentTotal;
+				writeTotalFile(mainView.edtTotal.text);
+				
+				if(dataBean.rubricPath != "") {
+				   mainView.writeRubricFile(dataBean.rubricPath);
+				   mainView.setHasRubricIndicator(true);
+				} else {
+				   mainView.writeRubricFile("</empty>");
+				   mainView.setHasRubricIndicator(false);
+				}
+				
+				mainView.cmbQuestions.dataProvider = dataBean.getQuestions();
+				mainView.getCommentsForQuestion(mainView.cmbQuestions.selectedItem as String);
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			public function resetAllFields():void {
+				dataBean.resetAllValues();
+				mainView.vBox.removeAllChildren();
+				mainView.edtCourse.text = "";
+				mainView.edtAssigment.text = "";
+				mainView.edtTotal.text = "0";
+				mainView.cmbQuestions.dataProvider = null;
+				
+				mainView.edtCourse.setFocus();
+			}
+		]]>
+	</mx:Script>
+	
+	<mx:Style source="/ORIG_STYLE.css"/>
+	
+	<mx:Image width="15" id="imgSlideBar" source="res/sidebar.png" autoLoad="true" scaleContent="false" verticalCenter="-16" x="0" height="400" rollOver="addGlow(imgSlideBar)" rollOut="removeGlow(imgSlideBar)" click="doCertainFocus()"/>	
+	<ns1:MainView id="mainView" x="10" y="10" saveQuestionEvent="addQuestion()" saveFileInfoEvent="updateFileInfoDetails()"/>
+</mx:WindowedApplication>

@@ -1,0 +1,1162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="714" height="100%" backgroundAlpha="0.0" nativeDragDrop="onDragDrop(event)" creationComplete="init()" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+	<mx:Script>
+		<![CDATA[
+			/* October 2009  
+ 
+			   UNISA eMarking Suite
+			   is delivered to UNISA under the 
+			   FLOSS licencing regime
+			 
+			   proudly developed by
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			 
+			      CREDITS
+			      Lead Developer    :: War Commander      :: Kyle Bowden
+			      Business Analyst  :: Field General      :: Willy Gadney
+			      Test Squad        :: Clean Out Crew     :: Herman Van Wyk & Tina Kanniah
+			      Dev Support       :: Backup             :: Nelson Baloyi
+			      LC Designer       :: Artillery          :: Lentswe Morule
+			      Installer         :: Mobilizer          :: Thabahla Shoko
+			      Enviro & Food     :: Crew Support       :: Khosi Gwala
+			      Architect         :: Special Operations :: Luigi D'Amico
+			*/
+			
+			import mx.effects.Move;
+			import flash.net.navigateToURL;
+			import mx.effects.Fade;
+			import mx.effects.Blur;
+			import mx.collections.IGroupingCollection;
+			import mx.managers.DragManager;
+			import mx.events.EffectEvent;
+			import mx.effects.Resize;
+			import mx.effects.Glow;
+			import mx.effects.Iris;
+			import mx.events.CloseEvent;
+			import mx.events.ListEvent;
+			import mx.events.ChildExistenceChangedEvent;
+			import mx.effects.Sequence;
+			import mx.effects.Parallel;
+			import mx.collections.ArrayCollection;
+			import mx.core.Application;
+			import mx.events.FlexEvent;
+			import events.AddCommentEvent;
+			import mx.controls.Alert;
+			import components.CommentView;
+            import flash.events.*;
+            import flash.desktop.*;
+            
+            private var masterPDF:String = "/res/MASTER_v1.5.pdf";
+
+			public var selectedCommentView:CommentView;
+			
+			public var savedFile:File;
+			public var isDataChanged:Boolean = false;
+			
+			[Bindable]
+			private var questionTooltip:String;
+			private var questionIndex:int = 0;
+			public var currentColorCount:int = 0;
+			public var colorShades:Array = [0xFCE1BC, 0xCECEFF, 0xDDFFBB, 0xD2FFFF, 0xFFFFCC];
+			
+			private var oldQuestionToEdit:String;
+			private var clearAfterSave:Boolean = false;
+			
+			private var rubricsPanelInView:Boolean = false;
+			
+			private var versionGlow:Glow;
+			
+			private var creditStartY:Number;
+			private var creditEndY:Number;
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			private function init():void {
+				versionGlow = new Glow();
+				versionGlow.target = lblVersion;
+				versionGlow.duration = 2000;
+				versionGlow.alphaFrom = 0;
+				versionGlow.alphaTo = 100;
+				versionGlow.blurXFrom = 25;
+				versionGlow.blurXTo = 0;
+				versionGlow.repeatCount = int.MAX_VALUE;
+				versionGlow.color = 0x08FF08;
+				
+				versionGlow.play();
+			}
+			
+			private var arrDevSqaud:Array = ["October 2009", 
+			                                 "UNISA eMarking Suite",
+			                                 "is delivered to UNISA under the",
+			                                 "FLOSS Licencing Regime",
+			                                 "------------------------------------",
+			                                 "Proudly Developed By",
+			                                 "THE AESIR DEVELOPMENT SQUAD", 
+                                             "| www.aesir.co.za  |",
+                                             "| info@aesir.co.za |",
+                                             "| +27 11 702 9000  |",
+                                             "------------------------------------",
+                                             "CREDITS",
+                                             "",
+                                             "Lead Developer|War Commander ",
+                                             "Kyle Bowden",
+                                             "Business Analyst|Field General",
+                                             "Willy Gadney",
+                                             "Test Squad|Clean Out Crew",
+                                             "Herman Van Wyk",
+                                             "Tina Kanniah",
+                                             "Dev Support|Backup",
+                                             "Nelson Baloyi",
+                                             "LC Designer|Artillery",
+                                             "Lentswe Morule",
+                                             "Installer|Mobilizer",
+                                             "Thabahla Shoko",
+                                             "Enviro & Food|Crew Support",
+                                             "Khosi Gwala",
+                                             "Architect|Special Operations",
+                                             "Luigi D'Amico",
+                                             "------------------------------------"];
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			private function openDevSqaudCredits():void {
+				var parraCredits:Parallel = new Parallel();
+				
+				var iris:Iris = new Iris();
+				iris.addEventListener(EffectEvent.EFFECT_START, function():void{
+				   cnvDevSqaud.visible = true;
+				});
+				iris.target = cnvDevSqaud;
+				iris.scaleXFrom = 0;
+				iris.scaleXTo = 100;
+				iris.scaleYFrom = 0;
+				iris.scaleYTo = 100;
+				
+				var ty:int = imgAesirLogo.y;
+				var move:Move = new Move();
+				move.target = imgAesirLogo;
+				move.duration = 2500;
+				move.yFrom = -100;
+				move.yTo = ty;
+				
+				parraCredits.addChild(iris);
+				parraCredits.addChild(move);
+				
+				parraCredits.play();
+			}
+			
+			private function closeDevSqaudCredits():void {
+				var resize:Resize = new Resize();
+				var tHeight:Number = cnvDevSqaud.height;
+				resize.addEventListener(EffectEvent.EFFECT_END, function():void {
+				   cnvDevSqaud.visible = false;
+				   cnvDevSqaud.height = tHeight;
+				});
+				resize.target = cnvDevSqaud;
+				resize.heightFrom = cnvDevSqaud.height;
+				resize.heightTo = 0;
+				resize.play();
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			private function doDevSqaudRollOutEffect():void {
+				if(cnvDevSqaud.visible) {
+				   closeDevSqaudCredits();	
+				} else {
+				   openDevSqaudCredits();	
+				}
+				
+				cnvDevSqaudCredits.removeAllChildren();
+				
+				creditStartY = 170;
+				creditEndY = -(arrDevSqaud.length*30);
+				
+				var i:String = "";
+				var obj:Object = null;
+				var lbl:Label = null;
+				var efx:Parallel = null;
+				var parraCredits:Parallel = new Parallel();
+				for(i in arrDevSqaud) {
+					obj = createCreditLabel(arrDevSqaud[i] as String);
+					
+					lbl = (obj.label as Label);
+					efx = (obj.effect as Parallel);
+					cnvDevSqaudCredits.addChild(lbl);
+					
+					parraCredits.addChild(efx);
+				}
+				
+				parraCredits.repeatCount = int.MAX_VALUE;
+				parraCredits.play();
+			}
+			
+			private function createCreditLabel(lbl:String):Object {
+				var lblCredit:Label = new Label();
+				lblCredit.text = lbl;
+				lblCredit.setStyle("color", 0x000000);
+				lblCredit.setStyle("textAlign", "center");
+				lblCredit.width = cnvDevSqaudCredits.width-2;
+				lblCredit.y = creditStartY;
+				
+				var parraCredits:Parallel = new Parallel();
+				
+				var move:Move = new Move();
+				move.target = lblCredit;
+				move.yFrom = creditStartY;
+				move.yTo = creditEndY;
+				move.duration = arrDevSqaud.length*1500; // 25000
+				
+				var glow:Glow = new Glow();
+				glow.color = 0x84ADEA;
+				glow.target = lblCredit;
+				glow.blurXFrom = 250;
+				glow.blurXTo = 15;
+				glow.alphaFrom = 0;
+				glow.alphaTo = 100;
+				glow.repeatCount = arrDevSqaud.length/2;
+				glow.duration = 2500;
+				
+				parraCredits.addChild(move);
+				parraCredits.addChild(glow);
+				
+				creditStartY += 30;
+				creditEndY += 30;
+				
+				return ({label: lblCredit, effect: parraCredits});
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			private function addComment():void {
+				if(Application.application.dataBean.isQuestionsEmpty) {
+					if(Application.application.dataBean.arrQuestions.length == 0) {
+				       Alert.show("There is no Element to add Comment to!");
+				    }
+				} else {
+					var cv:CommentView = createCommentView(-1, -1, "", "", "", false);
+					vBox.addChild(cv);
+					
+					cv.edtComment.setFocus();		
+				}
+			}
+			
+			private function deleteComment():void {
+				if(vBox.numChildren > 0) {
+				   Alert.show("Are you sure you want to Delete the Selected Comment!", "Delete Comment Confirmation", 3, null,handleDeleteComment,null, Alert.NO);	   	
+			    }
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			private function handleDeleteComment(evt:CloseEvent):void {
+				if(evt.detail == Alert.YES) {
+				   try {
+				       var deleteEffect:Resize = selectedCommentView.deleteEffect();
+				       deleteEffect.addEventListener(EffectEvent.EFFECT_END, function():void {
+					       try {
+					          vBox.removeChild(selectedCommentView);
+					       } catch(e:Error) {}
+						   if(Application.application.dataBean.arrComments.length != 0) {
+						       try {
+							      Application.application.dataBean.deleteComment(selectedCommentView.questionID);
+							      
+							      var index:int = selectedCommentView.indexNumber-1;
+							      if(index < 0) {
+							      	 index = vBox.numChildren-1;
+							      }
+							      var lastCommentView:CommentView = vBox.getChildAt(index) as CommentView;
+							      
+							      setVisualFocusOnCommentView(lastCommentView);
+							      lastCommentView.edtComment.setFocus();
+							      
+							      selectedCommentView = lastCommentView;
+							      
+							      var tCV:CommentView = null;
+							      for(var i:int = 0; i < vBox.numChildren; i++) {
+							      	  tCV = vBox.getChildAt(i) as CommentView;
+							      	  tCV.indexNumber = i;
+							      }
+							   } catch(e:Error) {}
+						   }
+	    
+					       isDataChanged = true;
+				      });
+				   
+				      deleteEffect.play();
+				   } catch(e:Error) {}
+				}
+			}
+			
+			private function createCommentView(index:int, quesID:int, ques:String, comm:String, mark:String, isPopulated:Boolean):CommentView {
+				var commentView:CommentView = new CommentView();
+					
+				commentView.addEventListener(FlexEvent.CREATION_COMPLETE, function():void {
+					commentView.setColorOfView(colorShades[currentColorCount] as uint);
+					currentColorCount++;
+					if(currentColorCount > colorShades.length-1) {
+					   currentColorCount = 0;
+					}
+					
+					if(!isPopulated) {
+					   commentView.setQuestionNumber(cmbQuestions.selectedItem as String);
+					} else {
+					   commentView.indexNumber = index;
+					   commentView.questionID = quesID;
+					   commentView.edtComment.text = comm;
+					   commentView.edtMark.text = mark;
+						
+					   commentView.setQuestionNumber(ques);
+					}
+					
+					commentView.initEffect();
+				});
+				
+				commentView.addEventListener(MouseEvent.CLICK, function(evt:MouseEvent):void {
+				    selectedCommentView = commentView;
+				    
+				    // COPY TEXT TO CLIPBOARD
+			   	    if(commentView.edtComment.text != "") {
+			   	       Clipboard.generalClipboard.setData(ClipboardFormats.TEXT_FORMAT, commentView.edtComment.text, true);
+			   	       
+			   	       setVisualFocusOnCommentView(commentView);
+			   	    }
+				});
+				
+				commentView.addEventListener(MouseEvent.DOUBLE_CLICK, function():void {
+				    commentView.resizeTextAreaBig();
+				});
+				
+				if(!isPopulated) {
+				   selectedCommentView = commentView;
+				   isDataChanged = false;
+				} else {
+				   isDataChanged = true;
+				}
+				
+				return commentView;
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			private function setVisualFocusOnCommentView(commentView:CommentView):void {
+				// COPY TEXT TO CLIPBOARD
+		   	    if(commentView.edtComment.text != "") {
+		   	       Clipboard.generalClipboard.setData(ClipboardFormats.TEXT_FORMAT, commentView.edtComment.text, true);
+		   	       
+		   	       var tCV:CommentView = null;
+		   	       for(var i:int = 0; i < vBox.numChildren; i++) {
+		   	       	   tCV = vBox.getChildAt(i) as CommentView;
+		   	       	   tCV.setStyle("borderColor", 0xFFFFFF);
+		   	       }
+		   	       
+		   	       commentView.setStyle("borderColor", 0xFF5555);
+		   	    }
+			}
+			
+			private function fireAddQuestionEvent():void {
+				var evt:Event = new Event("saveQuestionEvent");
+				dispatchEvent(evt);
+				
+				isDataChanged = true;
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			private function fireKeyAddQuestionEvent(kevt:KeyboardEvent):void {
+				if(kevt.keyCode == 13) {
+					if(!btnUpdateQuestion.visible) {
+					   var evt:Event = new Event("saveQuestionEvent");
+					   dispatchEvent(evt);
+					} else {
+					   updateQuestion();
+					}
+					
+					isDataChanged = true;
+				}
+			}
+			
+			private function fireUpdateFileInfo():void {
+				var evt:Event = new Event("saveFileInfoEvent");
+				dispatchEvent(evt);
+				
+				isDataChanged = true;
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			public function getCommentsForQuestion(question:String):void {
+				var arrComments:ArrayCollection = Application.application.dataBean.getComments(question);
+				lblQuestionNumber.text = question;
+				
+				vBox.removeAllChildren();
+				
+				for(var i:int = 0; i < arrComments.length; i++) {
+					var data:Object = arrComments.getItemAt(i) as Object;
+					var quesID:int = data.unique;
+					var ques:String = data.key;
+					var comm:String = data.value;
+					var mark:String = data.mark;
+					
+					var cv:CommentView = createCommentView(i, quesID, ques, comm, mark, true);
+					vBox.addChild(cv);
+				}
+			}
+			
+			private function scrollQuestionNumber(nav:String):void {
+				var direction:int = cmbQuestions.selectedIndex;
+				var numObj:ArrayCollection = cmbQuestions.dataProvider as ArrayCollection;
+				
+				if(nav == "PREV") {
+				   direction--;
+				   if(direction < 0) {
+				   	  direction = numObj.length;
+				   }
+				} else
+				if(nav == "NEXT") {
+				   direction++;
+				   if(direction >= numObj.length) {
+				   	  direction = 0;
+				   }
+				}
+				
+				cmbQuestions.selectedIndex = direction;
+				getCommentsForQuestion(cmbQuestions.selectedItem as String);	
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			private function edtQuestion():void {
+				if(cmbQuestions.selectedIndex != -1) {
+					questionIndex = cmbQuestions.selectedIndex;
+					oldQuestionToEdit = cmbQuestions.selectedItem as String;
+					edtQuestionNumber.text = cmbQuestions.selectedItem as String;
+					
+					btnAddQuestion.visible = false;
+					btnUpdateQuestion.visible = true;
+				} else {
+					Alert.show("There are no Elements to Edit!");
+				}
+			}
+			
+			private function updateQuestion():void {
+				Application.application.dataBean.updateQuestion(questionIndex, edtQuestionNumber.text, oldQuestionToEdit);
+				
+				lblQuestionNumber.text = edtQuestionNumber.text;
+				
+				cmbQuestions.selectedIndex = questionIndex;
+				getCommentsForQuestion(cmbQuestions.selectedItem as String);
+				
+				edtQuestionNumber.text = "";
+				btnAddQuestion.visible = true;
+				btnUpdateQuestion.visible = false;
+				
+				isDataChanged = true;
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			private function deleteQuestion():void {
+				if(cmbQuestions.selectedIndex != -1){
+					Alert.show("Are you sure you want to Delete Element, " + (cmbQuestions.selectedItem as String) + "?", "Delete Element Confirmation", 3, null, handleDeleteQuestion, null, Alert.NO);
+    			} else {
+    				Alert.show("There are no Elements to delete!");
+    			}  
+			}
+			
+			private function handleDeleteQuestion(evt:CloseEvent):void {
+				if(evt.detail == Alert.YES) {
+				   Application.application.dataBean.deleteQuestion(cmbQuestions.selectedIndex);
+				   
+				   if(Application.application.dataBean.arrQuestions.length == 0) {
+	                  cmbQuestions.selectedIndex = -1;
+	               } else {
+	                  cmbQuestions.selectedIndex = 0;	
+	               }
+	               getCommentsForQuestion(cmbQuestions.selectedItem as String);
+	               
+	               isDataChanged = true;
+				}
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			private function setNewFile():void {
+				var isBusy:Boolean = Application.application.dataBean.isFileInProgress();
+            	
+            	if(isBusy && isDataChanged) {
+            	   Alert.show("You are currently busy, do you wish to save?", "Confirm", Alert.YES | Alert.NO | Alert.CANCEL, null, handleOpenNewConfirmation, null, Alert.NO);	
+            	} else
+            	if(!isDataChanged) {
+            	   Application.application.resetAllFields();
+            	   
+            	   savedFile = null;
+            	   imgFileSave.visible = false;
+            	   setHasRubricIndicator(false);
+            	}
+            	
+            	lblQuestionNumber.text = "";
+			}
+			
+			private function handleOpenNewConfirmation(evt:CloseEvent):void {
+				var isYes:Boolean = false;
+				
+				if(evt.detail != Alert.CANCEL) {
+					if(evt.detail == Alert.YES) {
+	    	       	   isYes = true;
+	    	        }
+	    	        
+	    	        if(!isYes) {
+	            	   Application.application.resetAllFields();
+	            	   
+	            	   savedFile = null;
+	            	   imgFileSave.visible = false;
+	            	   setHasRubricIndicator(false);
+	            	} else {
+	            	   selectSaveAsFile(false);
+	            	}
+                }
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			private function openXMLFile():void {
+            	var isBusy:Boolean = Application.application.dataBean.isFileInProgress();
+            	
+            	if(isBusy && isDataChanged) {
+            	   Alert.show("You are currently busy, do you wish to save?", "Confirm", Alert.YES | Alert.NO | Alert.CANCEL, null,handlePreSaveConfirmation,null, Alert.NO);	
+            	} else {
+            	   var fileToOpen:File = new File();
+				   var txtFilter:FileFilter = new FileFilter("Text","*.xml");
+					
+				   try {
+					   fileToOpen.browseForOpen("Open", [txtFilter]);
+					   fileToOpen.addEventListener(Event.SELECT, fileSelected);
+				   } catch (error:Error){
+					   trace("Failed:", error.message);
+				   }
+            	}
+            }
+            
+            private function handlePreSaveConfirmation(evt:CloseEvent):void {
+            	var isYes:Boolean = false;
+            	
+            	if(evt.detail != Alert.CANCEL) {
+	            	if(evt.detail == Alert.YES) {
+	    	       	   isYes = true;
+	    	        }
+	    	        
+	    	        if(isYes) {
+	    	           selectSaveAsFile(true);
+	    	        } else {
+	    	        
+		               var fileToOpen:File = new File();
+					   var txtFilter:FileFilter = new FileFilter("Text","*.xml");
+						
+					   try {
+						  fileToOpen.browseForOpen("Open", [txtFilter]);
+						  fileToOpen.addEventListener(Event.SELECT, fileSelected);
+					   } catch (error:Error){
+						  trace("Failed:", error.message);
+					   }
+	    	        }
+    	        }
+            }
+            
+            /*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+            private function fileSelected(evt:Event):void {
+            	var stream:FileStream = new FileStream();
+			    stream.open(evt.target as File,FileMode.READ);
+			    var fileData:String = stream.readUTFBytes(stream.bytesAvailable);
+			    stream.close();
+			    
+			    var xmldata:XML=new XML(fileData);
+			    
+			    Application.application.dataBean.prepopulateDataFromXML(xmldata);
+			    Application.application.prepopulateData();
+			    
+			    savedFile = (evt.target as File);
+				imgFileSave.visible = true;
+				
+				isDataChanged = false;
+            }
+            
+            private function selectSaveAsFile(overide:Boolean):void {	
+				var file:File = File.documentsDirectory;
+				file.nativePath = file.nativePath + "/" + edtCourse.text + "_" + edtAssigment.text + ".xml"; 
+				
+                if(!overide) {
+	                var isBusy:Boolean = Application.application.dataBean.isFileInProgress();
+					if(!isBusy) {
+					    Alert.show("There is no data to save!");
+					} else {     
+		               
+		                if(edtCourse.text == "" || edtAssigment.text == "" || edtTotal.text == "") {
+		                   Alert.show("You cannot leave Course Name, Assignment and Total fields empty!");
+		                } else {
+			                try {	
+			                   clearAfterSave = false;
+			                   
+			    			   file.browseForSave("Save As");
+			   				   file.addEventListener(Event.SELECT, saveXMLFileData);
+							} catch (error:Error){
+					   		   trace("Failed:", error.message);
+							}
+		                }
+					}
+                } else {
+                	 if(edtCourse.text == "" || edtAssigment.text == "" || edtTotal.text == "") {
+	                    Alert.show("You cannot leave Course Name, Assignment and Total fields empty!");
+	                } else {
+	                    try {	
+		    			   clearAfterSave = true;
+		    			   
+		    			   file.browseForSave("Save As");
+		   				   file.addEventListener(Event.SELECT, saveXMLFileData);
+						} catch (error:Error){
+				   		   trace("Failed:", error.message);
+						}
+	                }
+                }
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			private function saveXMLFileData(evt:Event):void {
+				var newFile:File = evt.target as File;
+				if(newFile.extension == null) {
+				   newFile.nativePath = newFile.nativePath + ".xml";
+				}
+				
+				var newXML:XML = Application.application.dataBean.biuldXMLFile();
+				
+				var stream:FileStream = new FileStream();
+				stream.open(newFile, FileMode.WRITE);
+				stream.writeUTFBytes(newXML);
+				stream.close();
+				
+				// RESET ALL VALUES
+				if(clearAfterSave) {
+				   Application.application.resetAllFields();
+				   savedFile = null;
+				   imgFileSave.visible = false;
+				   
+				   clearAfterSave = false;
+				} else {
+				   savedFile = newFile;
+				   imgFileSave.visible = true;
+				}
+				
+				isDataChanged = false;
+			}
+			
+			private function saveFile():void {		
+				if(edtCourse.text == "" || edtAssigment.text == "" || edtTotal.text == "") {
+		           Alert.show("You cannot leave Course Name, Assignment and Total fields empty!");
+	            } else {
+				   var newFile:File = savedFile;
+					
+				   var newXML:XML = Application.application.dataBean.biuldXMLFile();
+					
+				   var stream:FileStream = new FileStream();
+				   stream.open(newFile, FileMode.WRITE);
+				   stream.writeUTFBytes(newXML);
+				   stream.close();
+					
+				   savedFile = newFile;
+				   imgFileSave.visible = true;
+				   
+				   isDataChanged = false;
+	            }
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			public function closeSystemDown():void {
+				var isBusy:Boolean = Application.application.dataBean.isFileInProgress();
+            	
+            	if(isBusy && isDataChanged) {
+            	   Alert.show("You are currently busy, do you wish to save?", "Confirm", Alert.YES | Alert.NO | Alert.CANCEL, null,handleExitSaveConfirmation,null, Alert.NO);	
+            	} else {
+            	   exitApplication();
+            	}
+			}
+			
+			private function exitApplication():void {
+				Application.application.writeTotalFile("</empty>");
+            	writeBlankCopyFile();
+            	writeRubricFile("</empty>");
+            	Application.application.exit();
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			private function handleExitSaveConfirmation(evt:CloseEvent):void {
+            	var isYes:Boolean = false;
+            	
+            	if(evt.detail != Alert.CANCEL) {
+	            	if(evt.detail == Alert.YES) {
+	    	       	   isYes = true;
+	    	        }
+	    	        
+	    	        if(!isYes) {
+	    	           exitApplication();	
+	            	} else {
+	            	   if(imgFileSave.visible) {
+	            	   	  saveFile();
+	            	   	  exitApplication();
+	            	   } else {
+	            	      selectSaveAsFile(true);
+	            	   }
+	            	}
+            	}
+            }
+			
+			public function writeBlankCopyFile():void {
+				var unisaPath:String = "C:/Program Files/UNISA/comm_engine.txt";
+				var file:File = new File(unisaPath);
+                
+                var commentText:String = "";
+                var mark:String = "";
+                var ques:String = "";
+                
+            	ques = "</empty>";
+            	mark = "</empty>";
+            	commentText = "</empty>";
+				
+				var strClip:String = "BOF\r" +
+				                     ques + "\r" + 
+				                     mark + "\r" +
+				                     commentText + "\r" +
+				                     "EOF";
+				
+				var stream:FileStream = new FileStream();
+				stream.open(file, FileMode.WRITE);
+				stream.writeUTFBytes(strClip);
+				
+				stream.close();
+			}
+            
+            /*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+            private function addGlow(img:Image):void {
+            	var glow:GlowFilter = new GlowFilter();
+            	glow.blurX = 5;
+            	glow.blurY = 5;
+            	glow.color = 0x00FF00;
+            	
+            	img.filters = [glow];
+            }
+            
+            private function removeGlow(img:Image):void {
+            	try {
+            	   img.filters = null;
+            	} catch(e:Error) {}
+            }
+            
+            private function clickGlowEffect(img:Image):void {
+            	var glow:Glow = new Glow();
+            	glow.target = img;
+            	glow.alphaFrom = 0;
+            	glow.alphaTo = 100;
+            	glow.blurXFrom = 10;
+            	glow.blurXTo = 0;
+            	glow.blurYFrom = 10;
+            	glow.blurYTo = 0;
+            	glow.color = 0x00FF00;
+            	glow.play();
+            }
+            
+            /*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+            private function clickEffect(img:Image):void {
+            	var iris:Iris = new Iris();
+            	iris.target = img;
+            	iris.scaleXFrom = 0;
+            	iris.scaleXTo = 20;
+            	iris.scaleYFrom = 0;
+            	iris.scaleYTo = 30;
+            	iris.play();
+            }
+            
+            private function doCertainFocus():void {
+            	Application.application.doCertainFocus();
+            }
+            
+            /*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+            private function onDragEnter(event:NativeDragEvent) :void {
+	            var files:Array = event.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+	            var file:File = (files[0] as File);
+	            
+	            var fileExt:String = file.extension.toLocaleUpperCase();
+	            var glow:Glow = new Glow();
+	            glow.targets = [cnvDragRubric, imgOpenRubric, imgTL, imgTR, imgBL, imgBR];
+	            glow.alphaFrom = 100;
+	            glow.alphaTo = 0;
+	            glow.blurXFrom = 25;
+	            glow.blurXTo = 0;
+	            glow.blurYFrom = 25;
+	            glow.blurYTo = 0;
+	            
+	            if(fileExt == "PDF") {
+	               glow.color = 0x08FF08;
+	            	
+	               DragManager.acceptDragDrop(this);
+	            } else {
+	               glow.color = 0xFF5555;
+	            }
+	            
+	            glow.play();
+	        }
+            
+            private function onDragDrop(event:NativeDragEvent) :void {
+                
+	            var files:Array = event.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+	            var file:File = (files[0] as File);
+	            
+	            if(edtCourse.text == "" || edtAssigment.text == "" || edtTotal.text == "") {
+	               Alert.show("You cannot leave Course Name, Assignment and Total fields empty!");
+	            } else {
+	               if(Application.application.dataBean.rubricPath != "") {
+	               	  var del:File = new File(Application.application.dataBean.rubricPath);
+	               	  if(del.exists) {
+	               	     del.deleteFile();
+	               	  }
+	               }
+	               
+	               var movedFile:File = new File("C:/Program Files/UNISA/Rubrics/" + edtCourse.text + "_" + edtAssigment.text + ".pdf");
+	               file.moveTo(FileReference(movedFile), true);
+	               
+	               Application.application.dataBean.setRubricPath(movedFile.nativePath);
+	               setHasRubricIndicator(true);
+	               writeRubricFile(movedFile.nativePath);
+	               
+	               hideRubricPanel();
+	            }
+	        }
+	        
+	        /*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+	        public function setHasRubricIndicator(hasRubric:Boolean):void {
+	        	var glow:Glow = new Glow();
+	        	glow.target = imgHasRubric;
+	        	glow.blurXFrom = 15;
+	        	glow.blurXTo = 0;
+	        	glow.blurYFrom = 15;
+	        	glow.blurYTo = 0;
+	        	
+	        	if(hasRubric) {
+	        	   glow.color = 0x08FF08;
+	        	   imgHasRubric.visible = true;
+	        	   imgAddRubric.visible = false;
+	        	} else {
+	        	   glow.color = 0xFF5555;
+	        	   imgHasRubric.visible = false;
+	        	   imgAddRubric.visible = true;
+	        	}
+	        	
+	        	glow.play();
+	        }
+	        
+	        public function writeRubricFile(path:String):void {
+				var unisaPath:String = "C:/Program Files/UNISA/rubric_engine.txt";
+				var file:File = new File(unisaPath);
+				
+				var strClip:String = "BOF\r" +
+				                     path + "\r" + 
+				                     "EOF";
+				
+				var stream:FileStream = new FileStream();
+				stream.open(file, FileMode.WRITE);
+				stream.writeUTFBytes(strClip);
+				
+				stream.close();
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			private function viewRubricPanel():void {
+				if(!rubricsPanelInView) {
+					var parra:Parallel = new Parallel();
+					parra.addEventListener(EffectEvent.EFFECT_START, function():void{
+					    rubricsPanelInView = true;
+					});
+						
+					var blur:Blur = new Blur();
+					
+					blur.blurXFrom = 10;
+					blur.blurXTo = 0;
+					blur.blurYFrom = 10;
+					blur.blurYTo = 0;
+					
+					var fade:Fade = new Fade();
+					fade.alphaFrom = 0;
+					fade.alphaTo = 1;
+					
+					parra.targets = [pnlRubricSetup, imgRubricSetupExit];
+					parra.duration = 700;
+					parra.addChild(blur);
+					parra.addChild(fade);
+					parra.play();
+				} else {
+					hideRubricPanel();
+				}
+			}
+			
+			public function hideRubricPanel():void {
+				var parra:Parallel = new Parallel();
+				parra.addEventListener(EffectEvent.EFFECT_END, function():void{
+				   rubricsPanelInView = false;
+				});
+					
+				var blur:Blur = new Blur();
+				blur.blurXFrom = 0;
+				blur.blurXTo = 5;
+				blur.blurYFrom = 0;
+				blur.blurYTo = 5;
+				
+				var fade:Fade = new Fade();
+				fade.alphaFrom = 1;
+				fade.alphaTo = 0;
+				
+				parra.targets = [pnlRubricSetup, imgRubricSetupExit];
+				parra.duration = 700;
+				parra.addChild(blur);
+				parra.addChild(fade);
+				parra.play();
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			private function assignRubricFile():void {
+				var fileToOpen:File = new File();
+			    var txtFilter:FileFilter = new FileFilter("PDF Document","*.pdf");
+				
+			    try {
+				   fileToOpen.browseForOpen("Assign Rubric", [txtFilter]);
+				   fileToOpen.addEventListener(Event.SELECT, rubricFileSelected);
+			    } catch (error:Error){
+				   trace("Failed:", error.message);
+			    }
+			}
+			
+			private function rubricFileSelected(evt:Event):void {
+				var rFile:File = (evt.target as File);
+				
+				if(edtCourse.text == "" || edtAssigment.text == "" || edtTotal.text == "") {
+	                Alert.show("You cannot leave Course Name, Assignment and Total fields empty!");
+	            } else {
+					if(Application.application.dataBean.rubricPath != "") {
+	               	  var del:File = new File(Application.application.dataBean.rubricPath);
+	               	  if(del.exists) {
+	               	     del.deleteFile();
+	               	  }
+	                }
+	               
+	                var movedFile:File = new File("C:/Program Files/UNISA/Rubrics/" + edtCourse.text + "_" + edtAssigment.text + ".pdf");
+	                rFile.moveTo(FileReference(movedFile), true);
+	                // file.copyTo(FileReference(movedFile), true);
+	               
+	                Application.application.dataBean.setRubricPath(movedFile.nativePath);
+	                setHasRubricIndicator(true);
+	                writeRubricFile(movedFile.nativePath);
+	                
+	                hideRubricPanel();
+                }
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			private function openMasterRubric():void {
+				if(edtCourse.text == "" || edtAssigment.text == "" || edtTotal.text == "") {
+	                Alert.show("You cannot leave Course Name, Assignment and Total fields empty!");
+	            } else {
+	            	var tFile:File = File.documentsDirectory;
+				    tFile.nativePath = tFile.nativePath + "/" + edtCourse.text + "_" + edtAssigment.text + ".pdf";
+				    tFile.browseForSave("Save As");
+			        tFile.addEventListener(Event.SELECT, saveCopyOfMaster);
+	            }
+			}
+			
+			private function saveCopyOfMaster(evt:Event):void {
+				var mFile:File = new File(File.applicationDirectory.nativePath + masterPDF);
+				
+				var movedFile:File = (evt.target as File);
+	            mFile.copyTo(FileReference(movedFile), true);
+	                
+	            navigateToURL(new URLRequest(movedFile.url));
+			}
+		]]>
+	</mx:Script>
+	
+	<mx:Metadata>
+	    [Event(name="saveQuestionEvent", type="flash.events.Event")]
+		[Event(name="saveFileInfoEvent", type="flash.events.Event")]
+	</mx:Metadata>
+	
+	<mx:Style source="/ORIG_STYLE.css"/>
+	<mx:Panel height="119" layout="absolute" top="10" left="10" right="332" title="File Setup" styleName="PanelStyle" id="pnlFileSetup">
+		<mx:Label x="33" y="12" text="Course:"/>
+		<mx:Label x="6" y="44" text="Assignment:"/>
+		<mx:TextInput id="edtCourse" x="93" y="10" width="246" change="fireUpdateFileInfo()"/>
+		<mx:TextInput id="edtAssigment" x="93" y="43" width="123" change="fireUpdateFileInfo()"/>
+		<mx:Label x="224" y="45" text="Total:"/>
+		<mx:TextInput x="264" y="43" width="75" id="edtTotal" maxChars="4" restrict="0-9." change="fireUpdateFileInfo()" text="0"/>
+	</mx:Panel>
+	<mx:Panel layout="absolute" styleName="PanelStyle" id="pnlQuestions" title="Elements" top="136" height="113" left="10" right="332">
+		<mx:Label x="7" y="10" text="Element:"/>
+		<mx:ComboBox x="66" y="7" width="112" id="cmbQuestions" change="getCommentsForQuestion(cmbQuestions.selectedItem as String)" dropdownWidth="150" toolTip="{cmbQuestions.selectedItem as String}"/>
+		<mx:VRule x="183" top="10" bottom="10"/>
+		<mx:Button x="35" y="40" label="Delete" width="67" styleName="ButtonStyle" fontSize="10" id="btnDelete" click="deleteQuestion()"/>
+		<mx:Button x="111" y="40" label="Edit" styleName="ButtonStyle" fontSize="10" width="67" id="btnEdit" click="edtQuestion()"/>
+		<mx:Label x="185" y="10" text="Element:"/>
+		<mx:TextInput x="247" y="8" width="95" id="edtQuestionNumber" maxChars="18" keyDown="fireKeyAddQuestionEvent(event)"/>
+		<mx:Button x="241" y="40" label="Add Element" fontSize="10" id="btnAddQuestion" width="101" height="22" click="fireAddQuestionEvent()"/>
+		<mx:Button x="211" y="40" label="Update Element" width="127" fontSize="10" id="btnUpdateQuestion" visible="false" click="updateQuestion()"/>
+	</mx:Panel>
+	<mx:Panel layout="absolute" styleName="PanelStyle" title="Comments" id="pnlComments" top="256" bottom="45" horizontalScrollPolicy="off" left="10" right="332">
+		<mx:VBox left="2" right="0" top="0" bottom="0" id="vBox" horizontalAlign="left" verticalAlign="top" verticalGap="1" borderStyle="none" borderThickness="1">
+		</mx:VBox>
+	</mx:Panel>
+	<mx:Image x="325" y="262" id="imgDeleteComment" source="res/delete.png" autoLoad="true" width="20" height="20" click="clickGlowEffect(imgDeleteComment);deleteComment();" toolTip="Delete Selected Comment." rollOver="addGlow(imgDeleteComment)" rollOut="removeGlow(imgDeleteComment)"/>
+	<mx:Image x="351" id="imgAddComment" source="res/add.png" autoLoad="true" width="20" height="20" click="clickGlowEffect(imgAddComment);addComment();" y="262" toolTip="Add Comment." rollOver="addGlow(imgAddComment)" rollOut="removeGlow(imgAddComment)"/>
+    <mx:Image x="353" y="17" width="20" height="20" id="imgExit" source="res/close.png" click="closeSystemDown()" scaleContent="true" autoLoad="true" rollOver="addGlow(imgExit)" rollOut="removeGlow(imgExit)" toolTip="Exit"/>
+    
+    <mx:HBox x="113" y="14" width="133" height="24" horizontalGap="5">
+        <mx:Image width="24" height="100%" id="imgNewFile" source="res/new.png" click="clickEffect(imgNewFile);setNewFile();" toolTip="New." rollOver="addGlow(imgNewFile)" rollOut="removeGlow(imgNewFile)"/>
+        <mx:Image source="res/open.png" width="24" height="100%" click="clickEffect(imgFileOpen);openXMLFile();" id="imgFileOpen" toolTip="Open." rollOver="addGlow(imgFileOpen)" rollOut="removeGlow(imgFileOpen)"/>
+        <mx:Image id="imgFileSaveAs" source="res/saveas.png" width="24" height="100%" toolTip="Save As..." click="clickEffect(imgFileSaveAs);selectSaveAsFile(false);" rollOver="addGlow(imgFileSaveAs)" rollOut="removeGlow(imgFileSaveAs)"/>
+        <mx:Image width="24" height="100%" source="res/save.png" id="imgFileSave" enabled="true" toolTip="Save." visible="false" click="clickEffect(imgFileSave);saveFile();" rollOver="addGlow(imgFileSave)" rollOut="removeGlow(imgFileSave)"/>
+    </mx:HBox>
+    <mx:HBox x="101" y="262" width="216" height="22" horizontalGap="4" verticalScrollPolicy="off" horizontalScrollPolicy="off" horizontalAlign="right">
+        <mx:Image id="imgPrevQuestion" source="res/prev.png" rollOver="addGlow(imgPrevQuestion)" rollOut="removeGlow(imgPrevQuestion)" click="scrollQuestionNumber('PREV')" toolTip="Previous Element."/>
+        <mx:Label id="lblQuestionNumber" fontSize="12" fontWeight="bold" textAlign="right"/>
+        <mx:Image id="imgNextQuestion" source="res/next.png" rollOver="addGlow(imgNextQuestion)" rollOut="removeGlow(imgNextQuestion)" click="scrollQuestionNumber('NEXT')" toolTip="Next Element."/>
+    </mx:HBox>
+    <mx:Label x="342" text="v1.5" id="lblVersion" click="doDevSqaudRollOutEffect()" fontWeight="bold" bottom="43" toolTip="Developed By... (Click Here)" color="#000000" rollOver="lblVersion.setStyle('color', '#FFFFFF');" rollOut="lblVersion.setStyle('color', '#000000');"/>
+    <mx:Image x="329" y="17" id="imgHide" source="res/hide.png" width="20" height="20" click="doCertainFocus()" rollOver="addGlow(imgHide)" rollOut="removeGlow(imgHide)" toolTip="Hide Application."/>
+    <mx:Image x="300" y="13" id="imgAddRubric" source="res/rubric.png" width="30" height="28" click="clickEffect(imgAddRubric);viewRubricPanel()" rollOver="addGlow(imgAddRubric)" rollOut="removeGlow(imgAddRubric)" toolTip="Assign Rubric To Comment File."/>
+    <mx:Image x="300" y="13" id="imgHasRubric" source="res/hasrubric.png" width="30" height="28" click="clickEffect(imgHasRubric);viewRubricPanel();" rollOver="addGlow(imgHasRubric)" rollOut="removeGlow(imgHasRubric)" toolTip="Has Rubric Assigned!" visible="false"/>
+    <mx:Panel height="239" layout="absolute" styleName="PanelStyle" title="Rubric Setup" left="390" right="10" top="10" id="pnlRubricSetup" backgroundAlpha="1.0" visible="false">
+        <mx:Canvas x="10" y="46" width="163" height="73" id="cnvDragRubric" backgroundColor="#FFFFFF" borderColor="#000000" borderStyle="solid" nativeDragEnter="onDragEnter(event)" toolTip="Drag PDF Rubric here.">
+            <mx:Label text="DRAG RUBRIC HERE" fontWeight="bold" color="#545454" enabled="false" horizontalCenter="0" verticalCenter="0"/>
+            <mx:Image id="imgTL" source="res/tl.png" left="3" top="3" width="10" height="10"/>
+            <mx:Image id="imgTR" source="res/tr.png" right="3" width="10" height="10" y="3"/>
+            <mx:Image id="imgBL" source="res/bl.png" left="3" width="10" height="10" y="58"/>
+            <mx:Image id="imgBR" source="res/br.png" right="3" width="10" height="10" y="58"/>
+        </mx:Canvas>
+        <mx:Image x="254" y="68" id="imgOpenRubric" source="res/openrubric.png" width="30" height="28" click="clickEffect(imgOpenRubric);assignRubricFile();" rollOver="addGlow(imgOpenRubric)" rollOut="removeGlow(imgOpenRubric)" toolTip="Browse for PDF Rubric." visible="true"/>
+        <mx:Label x="10" y="5" text="Marker" fontWeight="bold" textDecoration="normal"/>
+        <mx:HRule x="10" y="22" width="274" height="1"/>
+        <mx:Label x="10" y="26" text="Associate a rubric with an assignment"/>
+        <mx:Label x="10" y="149" text="Setup a rubric for Markers" height="44" width="182"/>
+        <mx:Label x="206" y="76" text="OR" fontWeight="bold"/>
+        <mx:Label x="10" y="127" text="Lecturer/Senior Marker" fontWeight="bold"/>
+        <mx:HRule x="10" y="146" width="274" height="1"/>
+        <mx:Image x="252" y="155" id="imgMasterRubric" source="res/masterrubric.png" width="30" height="28" click="clickEffect(imgMasterRubric);openMasterRubric();" rollOver="addGlow(imgMasterRubric)" rollOut="removeGlow(imgMasterRubric)" toolTip="Create Rubric From Master Rubric."/>
+    </mx:Panel>
+    <mx:Image x="675" y="17" width="20" height="20" id="imgRubricSetupExit" source="res/hide.png" click="clickEffect(imgRubricSetupExit);hideRubricPanel();" scaleContent="true" autoLoad="true" rollOver="addGlow(imgRubricSetupExit)" rollOut="removeGlow(imgRubricSetupExit)" toolTip="Close" visible="false"/>
+    <mx:Canvas x="390" y="256" width="314" height="314" borderColor="#000000" borderStyle="solid" borderThickness="3" backgroundColor="#FFFFFF" backgroundAlpha="1.0" id="cnvDevSqaud" visible="false" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+        <mx:Image y="10" width="250" height="112" id="imgAesirLogo" source="res/aesirfulllogo.png" scaleContent="false" autoLoad="true" horizontalCenter="0"/>
+        <mx:HRule x="10" y="120" width="288" strokeColor="#000000"/>
+        <mx:Canvas x="10" y="130" width="288" height="168" id="cnvDevSqaudCredits" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+        </mx:Canvas>
+        <mx:Image x="284" y="6" width="20" height="20" id="imgExitCredits" source="res/hide.png" click="closeDevSqaudCredits()" scaleContent="true" autoLoad="true" rollOver="addGlow(imgExitCredits)" rollOut="removeGlow(imgExitCredits)" toolTip="Close"/>
+    </mx:Canvas>
+</mx:Canvas>

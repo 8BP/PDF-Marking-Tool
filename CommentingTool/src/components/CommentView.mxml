@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="330" height="58" backgroundAlpha="0.0" horizontalScrollPolicy="off" verticalScrollPolicy="off" borderStyle="solid" borderColor="#FFFFFF">
+	<mx:Script>
+		<![CDATA[
+			/* October 2009  
+ 
+			   UNISA eMarking Suite
+			   is delivered to UNISA under the 
+			   FLOSS licencing regime
+			 
+			   proudly developed by
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			 
+			      CREDITS
+			      Lead Developer    :: War Commander      :: Kyle Bowden
+			      Business Analyst  :: Field General      :: Willy Gadney
+			      Test Squad        :: Clean Out Crew     :: Herman Van Wyk & Tina Kanniah
+			      Dev Support       :: Backup             :: Nelson Baloyi
+			      LC Designer       :: Artillery          :: Lentswe Morule
+			      Installer         :: Mobilizer          :: Thabahla Shoko
+			      Enviro & Food     :: Crew Support       :: Khosi Gwala
+			      Architect         :: Special Operations :: Luigi D'Amico
+			*/
+			
+			import mx.effects.Iris;
+			import mx.core.Application;
+			import mx.effects.Resize;
+			import mx.controls.Alert;
+			import events.AddCommentEvent;
+			
+			public var indexNumber:int = -1;
+			public var questionID:int = -1;
+			public var questionNumber:String;
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			public function initEffect():void {
+			    var resize:Resize = new Resize();
+			    resize.target = this;
+			    resize.heightFrom = 0;
+			    resize.heightTo = this.height;
+			    resize.play();
+			}
+			
+			public function deleteEffect():Resize {
+				var resize:Resize = new Resize();
+			    resize.duration = 400;
+			    resize.target = this;
+			    resize.heightFrom = this.height;
+			    resize.heightTo = 0;
+			    
+			    return resize;
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			public function resizeTextAreaBig():void {
+				var resize:Resize = new Resize();
+			    resize.target = this;
+			    resize.heightFrom = edtComment.height;
+			    resize.heightTo = edtComment.height+100;
+			    resize.play();
+			}
+			
+			public function setColorOfView(color:uint):void {
+				edtComment.setStyle("backgroundColor", color);
+				edtMark.setStyle("backgroundColor", color);
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			public function setQuestionNumber(question:String):void {
+				questionNumber = question;
+			}
+			
+			public function saveComment():void {
+				var markNumber:int = parseFloat(edtMark.text);
+				
+			   var strMark:String = edtMark.text;
+			   
+			   if (strMark.indexOf(".") > -1)  {
+			   		var strDecimalWithPoint:String = strMark.substring(edtMark.text.indexOf("."), edtMark.text.length);
+			   		if (strDecimalWithPoint.length > 1) {
+				   		var strDecimal:String = strMark.substring(edtMark.text.indexOf(".")+1, edtMark.text.length);
+			   	   		if(strDecimal != "5") {
+			   	   		Alert.show("Mark can only have a decimal value .5!");
+			   	   		edtMark.text = "";
+			   	   		}
+			   	 	}
+			   }   
+				
+				if(markNumber > 100) {
+				   Alert.show("Mark cannot be greater than 100!");
+				   edtMark.text = "";
+				} else
+				if(markNumber < -100) {
+				   Alert.show("Mark cannot be less than -100!");
+				   edtMark.text = "";
+				} else {
+					if(questionID == -1) {
+					   questionID = Application.application.addComment(questionNumber, edtComment.text, edtMark.text);
+				    } else {
+				       Application.application.dataBean.updateComment(questionID, questionNumber, edtComment.text, edtMark.text);
+				    }
+				    
+				    Application.application.mainView.isDataChanged = true; 
+			    }
+			}
+			
+			/*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+			private function writeCopyFile():void {
+				var unisaPath:String = "C:/Program Files/UNISA/comm_engine.txt";
+				var file:File = new File(unisaPath);
+                
+                var commentText:String = "";
+                var mark:String = "";
+                var ques:String = "";
+                
+                var rChar:int = 0;
+                commentText = edtComment.text;
+                for(var i:int = 0; i < commentText.length; i++) {	
+                	rChar = commentText.indexOf("\r\r");
+                	if(rChar == -1) {
+                	   rChar = commentText.indexOf("\n\r");
+                	}
+                	
+                	if(rChar > -1) {
+                	   commentText = commentText.replace(commentText.substring(rChar, rChar+2), "\n</p>\n");
+                	}
+                }
+				
+				mark = edtMark.text;
+				if(mark == "") {
+				   mark = "</empty>";
+				}
+				if(commentText == "") {
+				   commentText = "</empty>";
+				}
+				
+				ques = questionNumber;
+				
+				var strClip:String = "BOF\r" +
+				                     ques + "\r" + 
+				                     mark + "\r" +
+				                     commentText + "\r" +
+				                     "EOF";
+				
+				var stream:FileStream = new FileStream();
+				stream.open(file, FileMode.WRITE);
+				stream.writeUTFBytes(strClip);
+				
+				stream.close();
+			}
+			
+			private function addGlow(img:Image):void {
+            	var glow:GlowFilter = new GlowFilter();
+            	glow.blurX = 5;
+            	glow.blurY = 5;
+            	glow.color = 0x00FF00;
+            	
+            	img.filters = [glow];
+            }
+            
+            /*
+			   Proudly Developed By
+			 
+			   THE AESIR DEVELOPMENT SQUAD 
+			   www.aesir.co.za | info@aesir.co.za | +27 11 702 9000
+			*/
+            private function removeGlow(img:Image):void {
+            	try {
+            	   img.filters = null;
+            	} catch(e:Error) {}
+            }
+            
+            private function clickEffect(img:Image):void {
+            	var iris:Iris = new Iris();
+            	iris.target = img;
+            	iris.scaleXFrom = 0;
+            	iris.scaleXTo = 20;
+            	iris.scaleYFrom = 0;
+            	iris.scaleYTo = 30;
+            	iris.play();
+            }
+		]]>
+	</mx:Script>
+
+	<mx:TextArea id="edtComment" left="5" right="79" top="5" bottom="5" wordWrap="true" editable="true" enabled="true" borderThickness="1" change="saveComment()" doubleClickEnabled="true" toolTip="Comment" restrict="^[\”\“\’]"/>
+	<mx:TextInput id="edtMark" x="259" y="6" width="64" toolTip="Mark" change="saveComment()" maxChars="4" restrict="0-9."/>
+	<mx:Image x="298" y="30" height="25" id="imgCopyFile" source="res/copyfile.png" width="25" toolTip="Copy to Marking Tool" rollOver="addGlow(imgCopyFile)" rollOut="removeGlow(imgCopyFile)" click="clickEffect(imgCopyFile);writeCopyFile();"/>
+</mx:Canvas>

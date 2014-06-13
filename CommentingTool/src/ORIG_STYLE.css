@@ -1,0 +1,14 @@
+/* CSS file */
+
+Panel.PanelStyle
+{
+	borderColor: #84ADEA;
+	borderThicknessTop: 1;
+	borderAlpha: 1.0;
+	fontSize: 12;
+	color: #000000;
+	borderThicknessBottom: 15;
+}
+Button.ButtonStyle
+{
+}
